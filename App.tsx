@@ -5,16 +5,18 @@ import { HistoryList } from './components/HistoryList';
 import { ConfigPanel } from './components/ConfigPanel';
 import { GeminiAnalysis } from './components/GeminiAnalysis';
 import { FirmwareModal } from './components/FirmwareModal';
+import { GitHubModal } from './components/GitHubModal';
 import { generateMockReading } from './services/mockService';
 import { DEFAULT_DEVICES, DEFAULT_CONFIG } from './constants';
 import { WaterReading, SystemConfig, Device } from './types';
-import { ShieldCheck, Cpu, Loader2, Wifi, Terminal, CheckCircle2 } from 'lucide-react';
+import { ShieldCheck, Cpu, Loader2, Wifi, Terminal, CheckCircle2, Github } from 'lucide-react';
 
 const App: React.FC = () => {
   const [selectedDevice, setSelectedDevice] = useState<Device>(DEFAULT_DEVICES[0]);
   const [config, setConfig] = useState<SystemConfig>(DEFAULT_CONFIG);
   const [readings, setReadings] = useState<WaterReading[]>([]);
   const [isFirmwareOpen, setIsFirmwareOpen] = useState(false);
+  const [isGitHubOpen, setIsGitHubOpen] = useState(false);
   const [isBooting, setIsBooting] = useState(true);
   const [bootStep, setBootStep] = useState(0);
   
@@ -134,6 +136,11 @@ const App: React.FC = () => {
         onClose={() => setIsFirmwareOpen(false)} 
         config={config} 
       />
+      
+      <GitHubModal 
+        isOpen={isGitHubOpen}
+        onClose={() => setIsGitHubOpen(false)}
+      />
 
       {/* Navbar */}
       <nav className="bg-slate-800/80 backdrop-blur-md border-b border-slate-700 sticky top-0 z-50">
@@ -154,11 +161,20 @@ const App: React.FC = () => {
           
           <div className="flex items-center space-x-3">
             <button 
-              onClick={() => setIsFirmwareOpen(true)}
-              className="hidden md:flex items-center space-x-2 bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded-lg transition-all border border-slate-600 group"
+              onClick={() => setIsGitHubOpen(true)}
+              className="hidden md:flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg transition-all border border-slate-700"
+              title="Hướng dẫn đẩy code lên GitHub"
             >
-               <Cpu className="w-4 h-4 text-blue-400 group-hover:text-white transition-colors" />
-               <span className="text-sm font-medium">Nạp Code ESP32</span>
+               <Github className="w-4 h-4" />
+               <span className="text-sm font-medium">GitHub</span>
+            </button>
+
+            <button 
+              onClick={() => setIsFirmwareOpen(true)}
+              className="hidden md:flex items-center space-x-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-all border border-blue-500 shadow-lg shadow-blue-900/50 group animate-pulse-slow"
+            >
+               <Cpu className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
+               <span className="text-sm font-bold">Nạp Code ESP32</span>
             </button>
 
             <div className="flex items-center space-x-2 bg-green-500/10 px-3 py-1.5 rounded-full border border-green-500/20">
@@ -196,13 +212,23 @@ const App: React.FC = () => {
           </div>
           
           {/* Mobile Firmware Button */}
-          <button 
-            onClick={() => setIsFirmwareOpen(true)}
-            className="md:hidden w-full flex items-center justify-center space-x-2 bg-indigo-600 text-white px-4 py-3 rounded-xl border border-indigo-500 font-bold shadow-lg active:scale-95 transition-transform"
-          >
-             <Cpu className="w-4 h-4" />
-             <span>Lấy Code ESP32</span>
-          </button>
+          <div className="flex gap-2 w-full md:w-auto">
+             <button 
+                onClick={() => setIsGitHubOpen(true)}
+                className="md:hidden flex-1 flex items-center justify-center space-x-2 bg-slate-800 text-white px-4 py-3 rounded-xl border border-slate-700 font-bold shadow-lg active:scale-95 transition-transform"
+              >
+                <Github className="w-4 h-4" />
+                <span>GitHub</span>
+              </button>
+              
+              <button 
+                onClick={() => setIsFirmwareOpen(true)}
+                className="md:hidden flex-1 flex items-center justify-center space-x-2 bg-blue-600 text-white px-4 py-3 rounded-xl border border-blue-500 font-bold shadow-lg active:scale-95 transition-transform"
+              >
+                <Cpu className="w-4 h-4" />
+                <span>Nạp Code</span>
+              </button>
+          </div>
         </div>
 
         {/* Dashboard Grid */}

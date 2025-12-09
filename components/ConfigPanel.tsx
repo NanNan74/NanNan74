@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { SystemConfig } from '../types';
-import { Settings, Save, Bell } from 'lucide-react';
+import { Settings, Save, Bell, HelpCircle } from 'lucide-react';
 
 interface ConfigPanelProps {
   config: SystemConfig;
@@ -79,27 +79,41 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, onSave }) => {
         </div>
 
         <div className="pt-2 border-t border-slate-700">
-          <label className="block text-sm font-medium text-slate-400 mb-1 flex items-center">
-             <Bell className="w-3 h-3 mr-1" /> Telegram Chat ID:
+          <label className="block text-sm font-medium text-slate-400 mb-1 flex items-center justify-between">
+             <div className="flex items-center">
+                <Bell className="w-3 h-3 mr-1" /> Telegram Chat ID:
+             </div>
+             <a href="https://t.me/userinfobot" target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-400 hover:text-blue-300 flex items-center">
+                <HelpCircle className="w-3 h-3 mr-1" /> Lấy ID ở đâu?
+             </a>
           </label>
           <input
             type="text"
             name="telegramChatId"
             value={localConfig.telegramChatId}
             onChange={handleChange}
-            placeholder="Nhập Chat ID..."
+            placeholder="Nhập Chat ID của bạn..."
             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
         
-        {/* Helper text simulating the screenshot link */}
-        <div className="text-xs text-slate-500">
-           Bot: <span className="text-blue-400 hover:underline cursor-pointer">@canh_bao_lu_lut_bot</span>
+        <div className="pt-2">
+           <label className="block text-sm font-medium text-slate-400 mb-1">
+             Telegram Bot Token:
+           </label>
+           <input
+             type="text"
+             name="telegramBotToken"
+             value={localConfig.telegramBotToken}
+             onChange={handleChange}
+             placeholder="Nhập Token từ @BotFather..."
+             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500 text-xs font-mono"
+           />
         </div>
 
         <button
           type="submit"
-          className={`w-full py-2 px-4 rounded-lg font-bold text-white transition-all flex justify-center items-center ${
+          className={`w-full py-2 px-4 rounded-lg font-bold text-white transition-all flex justify-center items-center mt-4 ${
             isSaved ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'
           }`}
         >
@@ -108,7 +122,7 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, onSave }) => {
               <Save className="w-5 h-5 mr-2" /> Đã lưu!
             </>
           ) : (
-            'Lưu cấu hình'
+            'Lưu cấu hình & Code'
           )}
         </button>
       </form>
