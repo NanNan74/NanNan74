@@ -1,0 +1,5 @@
+{
+  "name": "FloodGuard Dashboard",
+  "description": "IoT Flood Monitoring System Dashboard with ESP32 integration and Gemini AI analysis.",
+  "requestFramePermissions": []
+}
