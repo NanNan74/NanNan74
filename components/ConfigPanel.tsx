@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { SystemConfig } from '../types';
-import { Settings, Save, Bell, HelpCircle } from 'lucide-react';
+import { Settings, Save, Bell, HelpCircle, FileCode } from 'lucide-react';
 
 interface ConfigPanelProps {
   config: SystemConfig;
   onSave: (newConfig: SystemConfig) => void;
+  onViewCode: () => void;
 }
 
-export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, onSave }) => {
+export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, onSave, onViewCode }) => {
   const [localConfig, setLocalConfig] = useState<SystemConfig>(config);
   const [isSaved, setIsSaved] = useState(false);
 
@@ -111,20 +112,29 @@ export const ConfigPanel: React.FC<ConfigPanelProps> = ({ config, onSave }) => {
            />
         </div>
 
-        <button
-          type="submit"
-          className={`w-full py-2 px-4 rounded-lg font-bold text-white transition-all flex justify-center items-center mt-4 ${
-            isSaved ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'
-          }`}
-        >
-          {isSaved ? (
-            <>
-              <Save className="w-5 h-5 mr-2" /> Đã lưu!
-            </>
-          ) : (
-            'Lưu cấu hình & Code'
-          )}
-        </button>
+        <div className="flex space-x-2 mt-4">
+            <button
+              type="button"
+              onClick={onViewCode}
+              className="flex-1 py-2 px-3 rounded-lg font-bold text-slate-300 bg-slate-700 hover:bg-slate-600 transition-all flex justify-center items-center text-xs"
+            >
+              <FileCode className="w-4 h-4 mr-2" /> Xem Code C++
+            </button>
+            <button
+              type="submit"
+              className={`flex-[2] py-2 px-4 rounded-lg font-bold text-white transition-all flex justify-center items-center ${
+                isSaved ? 'bg-green-600 hover:bg-green-700' : 'bg-blue-600 hover:bg-blue-700'
+              }`}
+            >
+              {isSaved ? (
+                <>
+                  <Save className="w-5 h-5 mr-2" /> Đã lưu!
+                </>
+              ) : (
+                'Lưu Cấu Hình'
+              )}
+            </button>
+        </div>
       </form>
     </div>
   );

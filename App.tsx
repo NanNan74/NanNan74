@@ -9,13 +9,14 @@ import { GitHubModal } from './components/GitHubModal';
 import { generateMockReading } from './services/mockService';
 import { DEFAULT_DEVICES, DEFAULT_CONFIG } from './constants';
 import { WaterReading, SystemConfig, Device } from './types';
-import { ShieldCheck, Cpu, Loader2, Wifi, Terminal, CheckCircle2, Github } from 'lucide-react';
+import { ShieldCheck, Cpu, Loader2, Wifi, Terminal, CheckCircle2, Github, Globe } from 'lucide-react';
 
 const App: React.FC = () => {
   const [selectedDevice, setSelectedDevice] = useState<Device>(DEFAULT_DEVICES[0]);
   const [config, setConfig] = useState<SystemConfig>(DEFAULT_CONFIG);
   const [readings, setReadings] = useState<WaterReading[]>([]);
   const [isFirmwareOpen, setIsFirmwareOpen] = useState(false);
+  const [firmwareInitialTab, setFirmwareInitialTab] = useState<'guide' | 'telegram' | 'code'>('guide');
   const [isGitHubOpen, setIsGitHubOpen] = useState(false);
   const [isBooting, setIsBooting] = useState(true);
   const [bootStep, setBootStep] = useState(0);
@@ -78,6 +79,11 @@ const App: React.FC = () => {
     console.log("Config saved:", newConfig);
   }, []);
 
+  const handleOpenFirmware = (tab: 'guide' | 'telegram' | 'code' = 'guide') => {
+    setFirmwareInitialTab(tab);
+    setIsFirmwareOpen(true);
+  };
+
   if (isBooting) {
     const bootMessages = [
       "System Kernel Loading...",
@@ -135,6 +141,7 @@ const App: React.FC = () => {
         isOpen={isFirmwareOpen} 
         onClose={() => setIsFirmwareOpen(false)} 
         config={config} 
+        initialTab={firmwareInitialTab}
       />
       
       <GitHubModal 
@@ -163,14 +170,14 @@ const App: React.FC = () => {
             <button 
               onClick={() => setIsGitHubOpen(true)}
               className="hidden md:flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-2 rounded-lg transition-all border border-slate-700"
-              title="Hướng dẫn đẩy code lên GitHub"
+              title="Hướng dẫn đẩy code lên GitHub & Public Web"
             >
                <Github className="w-4 h-4" />
-               <span className="text-sm font-medium">GitHub</span>
+               <span className="text-sm font-medium">GitHub / Public Web</span>
             </button>
 
             <button 
-              onClick={() => setIsFirmwareOpen(true)}
+              onClick={() => handleOpenFirmware('guide')}
               className="hidden md:flex items-center space-x-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-all border border-blue-500 shadow-lg shadow-blue-900/50 group animate-pulse-slow"
             >
                <Cpu className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
@@ -217,12 +224,12 @@ const App: React.FC = () => {
                 onClick={() => setIsGitHubOpen(true)}
                 className="md:hidden flex-1 flex items-center justify-center space-x-2 bg-slate-800 text-white px-4 py-3 rounded-xl border border-slate-700 font-bold shadow-lg active:scale-95 transition-transform"
               >
-                <Github className="w-4 h-4" />
-                <span>GitHub</span>
+                <Globe className="w-4 h-4" />
+                <span>Web / Deploy</span>
               </button>
               
               <button 
-                onClick={() => setIsFirmwareOpen(true)}
+                onClick={() => handleOpenFirmware('code')}
                 className="md:hidden flex-1 flex items-center justify-center space-x-2 bg-blue-600 text-white px-4 py-3 rounded-xl border border-blue-500 font-bold shadow-lg active:scale-95 transition-transform"
               >
                 <Cpu className="w-4 h-4" />
@@ -237,7 +244,11 @@ const App: React.FC = () => {
           {/* Left Column: Status & Config */}
           <div className="md:col-span-4 lg:col-span-3 space-y-6">
             <StatusCard currentReading={readings.length > 0 ? readings[readings.length - 1] : null} />
-            <ConfigPanel config={config} onSave={handleSaveConfig} />
+            <ConfigPanel 
+                config={config} 
+                onSave={handleSaveConfig} 
+                onViewCode={() => handleOpenFirmware('code')}
+            />
             <GeminiAnalysis data={readings} config={config} />
           </div>
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Copy, Check, Code, Cpu, BookOpen, FileCode, MessageCircle, Send } from 'lucide-react';
 import { SystemConfig } from '../types';
 
@@ -6,11 +6,18 @@ interface FirmwareModalProps {
   isOpen: boolean;
   onClose: () => void;
   config: SystemConfig;
+  initialTab?: 'guide' | 'telegram' | 'code';
 }
 
-export const FirmwareModal: React.FC<FirmwareModalProps> = ({ isOpen, onClose, config }) => {
+export const FirmwareModal: React.FC<FirmwareModalProps> = ({ isOpen, onClose, config, initialTab = 'guide' }) => {
   const [copied, setCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<'guide' | 'telegram' | 'code'>('guide');
+  const [activeTab, setActiveTab] = useState<'guide' | 'telegram' | 'code'>(initialTab);
+
+  useEffect(() => {
+    if (isOpen) {
+        setActiveTab(initialTab);
+    }
+  }, [isOpen, initialTab]);
 
   if (!isOpen) return null;
 
@@ -391,8 +398,15 @@ lib_deps =
                     </button>
                 </div>
                 
-                <div className="flex-1 overflow-auto p-4 bg-[#1e1e1e] font-mono text-sm relative custom-scrollbar">
-                    <pre className="text-blue-300 whitespace-pre-wrap leading-relaxed">{firmwareCode}</pre>
+                <div className="flex-1 overflow-auto bg-[#1e1e1e] font-mono text-sm relative custom-scrollbar flex">
+                    {/* Line Numbers */}
+                    <div className="bg-[#1e1e1e] text-slate-600 text-right pr-4 pl-2 py-4 select-none border-r border-slate-800 min-w-[3rem]">
+                        {firmwareCode.split('\n').map((_, i) => (
+                            <div key={i} className="leading-relaxed">{i + 1}</div>
+                        ))}
+                    </div>
+                    {/* Code Content */}
+                    <pre className="text-blue-300 p-4 whitespace-pre-wrap leading-relaxed flex-1">{firmwareCode}</pre>
                 </div>
                </>
            )}
