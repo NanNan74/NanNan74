@@ -2,7 +2,7 @@ import { Device, SystemConfig } from './types';
 
 export const DEFAULT_DEVICES: Device[] = [
   { id: 'tank-001', name: 'Nhà Ánh Như', location: 'Zone A' },
-  { id: 'river-002', name: 'Nhà Ngọc Anh)', location: 'Zone B' },
+  { id: 'river-002', name: 'Nhà Ngọc Anh', location: 'Zone B' },
   { id: 'sewer-003', name: 'Nhà Thủy Tiên', location: 'Zone C' },
 ];
 
