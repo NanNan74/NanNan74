@@ -66,7 +66,7 @@ Cách 2: Nhận cảnh báo qua Telegram
 ## 5. Liên hệ & Hỗ trợ
 - Tác giả: NanNan74
 - Email: nhuclaus74@gmail.cm
-- GitHub: [Link GitHub của em](https://github.com/NanNan74/NanNan74)
+- GitHub: https://github.com/NanNan74/NanNan74
 
 ---
 *© 2025 Flood Warning System Project.*
