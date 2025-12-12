@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { db } from './services/firebase';
 import { ref, onValue, set } from "firebase/database";
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { MapPin, Activity, Droplets, History, AlertTriangle, CheckCircle, Signal, Settings, Save, Calendar } from 'lucide-react';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
+import { MapPin, Activity, Droplets, History, AlertTriangle, CheckCircle, Signal, Settings, Save, Calendar, Info } from 'lucide-react';
 
 // --- CẤU HÌNH MẶC ĐỊNH ---
 const DEFAULT_CHAT_ID = "-5023306137"; 
@@ -35,8 +35,8 @@ function App() {
   const [isOnline, setIsOnline] = useState(false);
 
   const [config, setConfig] = useState({
-    min: 0,
-    max: 50,
+    min: 30, // Mặc định ngưỡng chuyển sang Bình thường
+    max: 70, // Mặc định ngưỡng chuyển sang Nguy hiểm
     chatId: DEFAULT_CHAT_ID, 
     active: true
   });
@@ -57,10 +57,9 @@ function App() {
         setIsOnline(true);
         setCurrentLevel(Number(data.water_level_percent || 0));
         
-        // --- SỬA ĐỔI: Xử lý hiển thị ngày tháng năm ---
-        // Nếu ESP32 gửi lên chuỗi thời gian, ta dùng nó. Nếu không, lấy giờ hiện tại của Web
+        // Xử lý hiển thị ngày tháng năm
         const timeDisplay = data.last_updated 
-            ? data.last_updated // Giả sử ESP32 gửi lên format đẹp, nếu không thì dùng hàm format dưới
+            ? data.last_updated 
             : formatFullDateTime(new Date()); 
             
         setLastUpdate(timeDisplay);
@@ -72,8 +71,8 @@ function App() {
 
         if (data.config) {
           setConfig({
-            min: data.config.min !== undefined ? data.config.min : 0,
-            max: data.config.max !== undefined ? data.config.max : 50,
+            min: data.config.min !== undefined ? data.config.min : 30,
+            max: data.config.max !== undefined ? data.config.max : 70,
             chatId: data.config.telegram_id || DEFAULT_CHAT_ID,
             active: data.config.alert_active ?? true
           });
@@ -87,13 +86,10 @@ function App() {
           }));
           setHistoryData(list.slice(-15)); 
         } else {
-          // --- SỬA ĐỔI: Lịch sử thêm ngày tháng ---
           setHistoryData(prev => {
              const newData = [...prev, { 
                id: Date.now().toString(), 
-               // Hiển thị đầy đủ ngày giờ trong bảng
                time: formatFullDateTime(new Date()), 
-               // Để vẽ biểu đồ cho đẹp, có thể bạn chỉ muốn hiện giờ (tùy chọn)
                shortTime: new Date().toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}),
                level: Number(data.water_level_percent || 0) 
              }];
@@ -117,7 +113,7 @@ function App() {
       alert_active: config.active
     })
     .then(() => {
-      alert(`✅ Đã lưu cấu hình!\nChat ID: ${config.chatId}\nBáo động khi > ${config.max}%`);
+      alert(`✅ Đã lưu cấu hình!\nBình thường: > ${config.min}%\nNguy hiểm: > ${config.max}%`);
       setIsSaving(false);
     })
     .catch((err) => {
@@ -126,10 +122,36 @@ function App() {
     });
   };
 
+  // --- LOGIC PHÂN LOẠI 3 MỨC ---
   const getStatusColor = (level) => {
-    if (level >= config.max) return { color: '#ef4444', text: 'NGUY HIỂM', bg: 'bg-red-500/20', icon: <AlertTriangle /> };
-    if (level >= config.max * 0.7) return { color: '#f59e0b', text: 'CẢNH BÁO', bg: 'bg-yellow-500/20', icon: <Activity /> };
-    return { color: '#22c55e', text: 'BÌNH THƯỜNG', bg: 'bg-green-500/20', icon: <CheckCircle /> };
+    if (level >= config.max) {
+      return { 
+        color: '#ef4444', 
+        text: 'NGUY HIỂM', 
+        bg: 'bg-red-500/20', 
+        border: 'border-red-500',
+        textColor: 'text-red-400',
+        icon: <AlertTriangle /> 
+      };
+    }
+    if (level >= config.min) {
+      return { 
+        color: '#f59e0b', 
+        text: 'BÌNH THƯỜNG', 
+        bg: 'bg-yellow-500/20', 
+        border: 'border-yellow-500',
+        textColor: 'text-yellow-400',
+        icon: <Activity /> 
+      };
+    }
+    return { 
+      color: '#22c55e', 
+      text: 'THẤP', 
+      bg: 'bg-green-500/20', 
+      border: 'border-green-500',
+      textColor: 'text-green-400',
+      icon: <CheckCircle /> 
+    };
   };
 
   const status = getStatusColor(currentLevel);
@@ -147,7 +169,6 @@ function App() {
           </h1>
           <div className="flex items-center gap-2 mt-1">
              <p className="text-slate-400 text-xs">Cập nhật lúc: </p>
-             {/* --- SỬA ĐỔI: Hiển thị thời gian có icon --- */}
              <span className="text-yellow-400 text-xs font-mono flex items-center gap-1">
                 <Calendar size={12}/> {lastUpdate}
              </span>
@@ -223,24 +244,32 @@ function App() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Báo an toàn (&lt;%)</label>
+                    <label className="text-xs text-slate-400 block mb-1 text-yellow-500">Mức Bình thường (&gt;%)</label>
                     <input 
                       type="number" 
-                      className="w-full bg-[#0f172a] border border-slate-600 rounded p-2 text-white focus:border-blue-500 outline-none text-sm"
+                      className="w-full bg-[#0f172a] border border-yellow-700 rounded p-2 text-white focus:border-yellow-500 outline-none text-sm"
                       value={config.min}
                       onChange={(e) => setConfig({...config, min: e.target.value})}
                     />
                   </div>
                   <div>
-                    <label className="text-xs text-slate-400 block mb-1">Báo nguy hiểm (&gt;%)</label>
+                    <label className="text-xs text-slate-400 block mb-1 text-red-500">Mức Nguy hiểm (&gt;%)</label>
                     <input 
                       type="number" 
-                      className="w-full bg-[#0f172a] border border-slate-600 rounded p-2 text-white focus:border-blue-500 outline-none text-sm"
+                      className="w-full bg-[#0f172a] border border-red-700 rounded p-2 text-white focus:border-red-500 outline-none text-sm"
                       value={config.max}
                       onChange={(e) => setConfig({...config, max: e.target.value})}
                     />
                   </div>
                 </div>
+                
+                {/* Giải thích mức độ */}
+                <div className="text-[11px] text-slate-500 bg-slate-900/50 p-2 rounded border border-slate-700">
+                  <p className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-green-500"></span> 0 - {config.min}%: Mức Thấp</p>
+                  <p className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500"></span> {config.min} - {config.max}%: Bình thường</p>
+                  <p className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span> &gt; {config.max}%: Nguy hiểm</p>
+                </div>
+
                 <button 
                   onClick={handleSaveConfig}
                   disabled={isSaving}
@@ -277,9 +306,10 @@ function App() {
               <h3 className="text-white font-semibold flex items-center gap-2 text-sm uppercase">
                 <Activity className="text-purple-500"/> Biểu đồ theo thời gian
               </h3>
-              <div className="flex gap-4 text-xs">
+              <div className="flex gap-3 text-[10px] md:text-xs">
                  <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-blue-500"></span>Thực tế</div>
-                 <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span>Ngưỡng {config.max}%</div>
+                 <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500"></span>Mức {config.min}</div>
+                 <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500"></span>Mức {config.max}</div>
               </div>
             </div>
             
@@ -293,12 +323,18 @@ function App() {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                  {/* Trục X dùng shortTime để đỡ rối, tooltip dùng time đầy đủ */}
                   <XAxis dataKey="time" stroke="#64748b" tickFormatter={(str) => str.split(' ')[1] || str} tick={{fill: '#94a3b8', fontSize: 11}} />
                   <YAxis stroke="#64748b" domain={[0, 100]} tick={{fill: '#94a3b8', fontSize: 11}} unit="%" />
                   <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#fff' }} />
+                  
+                  {/* Đường thực tế */}
                   <Line type="monotone" dataKey="level" stroke="#3b82f6" strokeWidth={3} dot={{r: 4, fill:'#1e293b'}} activeDot={{r: 6}} />
-                  <Line type="monotone" dataKey={() => config.max} stroke="#ef4444" strokeDasharray="5 5" dot={false} strokeWidth={1} name="Báo động" />
+                  
+                  {/* Đường giới hạn Vàng (Bình thường) */}
+                  <Line type="monotone" dataKey={() => config.min} stroke="#eab308" strokeDasharray="3 3" dot={false} strokeWidth={1} name="Ngưỡng Bình thường" />
+                  
+                  {/* Đường giới hạn Đỏ (Nguy hiểm) */}
+                  <Line type="monotone" dataKey={() => config.max} stroke="#ef4444" strokeDasharray="5 5" dot={false} strokeWidth={1} name="Ngưỡng Nguy hiểm" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
@@ -319,17 +355,20 @@ function App() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-700/50">
-                  {historyData.slice().reverse().map((log, index) => (
-                    <tr key={index} className="hover:bg-slate-800/50">
-                      <td className="px-4 py-3 font-mono text-slate-300">{log.time}</td>
-                      <td className="px-4 py-3 text-white font-bold">{log.level}%</td>
-                      <td className="px-4 py-3">
-                        <span className={`px-2 py-1 rounded text-[10px] font-bold border ${log.level >= config.max ? 'border-red-500/30 bg-red-500/10 text-red-400' : 'border-green-500/30 bg-green-500/10 text-green-400'}`}>
-                          {log.level >= config.max ? 'NGUY HIỂM' : 'AN TOÀN'}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {historyData.slice().reverse().map((log, index) => {
+                    const rowStatus = getStatusColor(log.level);
+                    return (
+                      <tr key={index} className="hover:bg-slate-800/50">
+                        <td className="px-4 py-3 font-mono text-slate-300">{log.time}</td>
+                        <td className="px-4 py-3 text-white font-bold">{log.level}%</td>
+                        <td className="px-4 py-3">
+                          <span className={`px-2 py-1 rounded text-[10px] font-bold border ${rowStatus.bg} ${rowStatus.textColor} ${rowStatus.border.replace('border', 'border-opacity-30')}`}>
+                            {rowStatus.text}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
