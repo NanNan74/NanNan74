@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { db } from './services/firebase';
-// THÊM: import 'set' để lưu dữ liệu
 import { ref, onValue, set } from "firebase/database";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { MapPin, Activity, Navigation, Droplets, History, AlertTriangle, CheckCircle, Signal, Settings, Save, Bell } from 'lucide-react';
+import { MapPin, Activity, Droplets, History, AlertTriangle, CheckCircle, Signal, Settings, Save, Calendar } from 'lucide-react';
 
 // --- CẤU HÌNH MẶC ĐỊNH ---
 const DEFAULT_CHAT_ID = "-5023306137"; 
@@ -14,26 +13,35 @@ const STATIONS = [
   { id: 'river-003', name: 'Nhà Thủy Tiên', address: 'Khu vực Trũng thấp' }
 ];
 
+// Hàm hỗ trợ format thời gian đầy đủ
+const formatFullDateTime = (dateObj) => {
+  return dateObj.toLocaleString('vi-VN', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit'
+  });
+};
+
 function App() {
   const [selectedStation, setSelectedStation] = useState(STATIONS[0]);
   
-  // State dữ liệu hiển thị
   const [currentLevel, setCurrentLevel] = useState(0);
   const [historyData, setHistoryData] = useState([]);
   const [lastUpdate, setLastUpdate] = useState("Đang chờ kết nối...");
   const [gps, setGps] = useState({ lat: 0, lng: 0 });
   const [isOnline, setIsOnline] = useState(false);
 
-  // --- STATE CẤU HÌNH (QUAN TRỌNG) ---
   const [config, setConfig] = useState({
     min: 0,
     max: 50,
-    chatId: DEFAULT_CHAT_ID, // Mặc định hiển thị luôn
+    chatId: DEFAULT_CHAT_ID, 
     active: true
   });
   const [isSaving, setIsSaving] = useState(false);
 
-  // --- LẮNG NGHE DỮ LIỆU TỪ FIREBASE ---
   useEffect(() => {
     setCurrentLevel(0);
     setHistoryData([]);
@@ -48,16 +56,21 @@ function App() {
       if (data) {
         setIsOnline(true);
         setCurrentLevel(Number(data.water_level_percent || 0));
-        setLastUpdate(data.last_updated || new Date().toLocaleTimeString('vi-VN'));
+        
+        // --- SỬA ĐỔI: Xử lý hiển thị ngày tháng năm ---
+        // Nếu ESP32 gửi lên chuỗi thời gian, ta dùng nó. Nếu không, lấy giờ hiện tại của Web
+        const timeDisplay = data.last_updated 
+            ? data.last_updated // Giả sử ESP32 gửi lên format đẹp, nếu không thì dùng hàm format dưới
+            : formatFullDateTime(new Date()); 
+            
+        setLastUpdate(timeDisplay);
         
         setGps({ 
           lat: Number(data.latitude || 0), 
           lng: Number(data.longitude || 0) 
         });
 
-        // --- LOGIC LẤY CẤU HÌNH ---
         if (data.config) {
-          // Nếu trên Firebase có dữ liệu, lấy về
           setConfig({
             min: data.config.min !== undefined ? data.config.min : 0,
             max: data.config.max !== undefined ? data.config.max : 50,
@@ -65,7 +78,6 @@ function App() {
             active: data.config.alert_active ?? true
           });
         } else {
-          // Nếu Firebase chưa có (lần đầu), dùng mặc định
           setConfig(prev => ({ ...prev, chatId: DEFAULT_CHAT_ID }));
         }
 
@@ -75,10 +87,14 @@ function App() {
           }));
           setHistoryData(list.slice(-15)); 
         } else {
+          // --- SỬA ĐỔI: Lịch sử thêm ngày tháng ---
           setHistoryData(prev => {
              const newData = [...prev, { 
                id: Date.now().toString(), 
-               time: new Date().toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}), 
+               // Hiển thị đầy đủ ngày giờ trong bảng
+               time: formatFullDateTime(new Date()), 
+               // Để vẽ biểu đồ cho đẹp, có thể bạn chỉ muốn hiện giờ (tùy chọn)
+               shortTime: new Date().toLocaleTimeString('vi-VN', {hour:'2-digit', minute:'2-digit'}),
                level: Number(data.water_level_percent || 0) 
              }];
              return newData.slice(-20);
@@ -90,12 +106,10 @@ function App() {
     return () => unsubscribe();
   }, [selectedStation]);
 
-  // --- HÀM LƯU CẤU HÌNH ---
   const handleSaveConfig = () => {
     setIsSaving(true);
     const configRef = ref(db, `devices/${selectedStation.id}/config`);
     
-    // Gửi cấu hình lên Firebase để ESP32 đọc
     set(configRef, {
       min: Number(config.min),
       max: Number(config.max),
@@ -103,7 +117,7 @@ function App() {
       alert_active: config.active
     })
     .then(() => {
-      alert(`✅ Đã lưu!\nChat ID: ${config.chatId}\nBáo động khi > ${config.max}%`);
+      alert(`✅ Đã lưu cấu hình!\nChat ID: ${config.chatId}\nBáo động khi > ${config.max}%`);
       setIsSaving(false);
     })
     .catch((err) => {
@@ -112,9 +126,7 @@ function App() {
     });
   };
 
-  // Logic màu sắc dựa trên cấu hình Max
   const getStatusColor = (level) => {
-    // Dùng config.max thay vì số cứng 50
     if (level >= config.max) return { color: '#ef4444', text: 'NGUY HIỂM', bg: 'bg-red-500/20', icon: <AlertTriangle /> };
     if (level >= config.max * 0.7) return { color: '#f59e0b', text: 'CẢNH BÁO', bg: 'bg-yellow-500/20', icon: <Activity /> };
     return { color: '#22c55e', text: 'BÌNH THƯỜNG', bg: 'bg-green-500/20', icon: <CheckCircle /> };
@@ -126,14 +138,20 @@ function App() {
   return (
     <div className="min-h-screen bg-[#0f172a] text-slate-200 font-sans p-4 md:p-6">
       
-      {/* --- HEADER --- */}
+      {/* HEADER */}
       <header className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 bg-[#1e293b] p-4 rounded-xl border border-slate-700 shadow-lg">
         <div>
           <h1 className="text-2xl font-bold text-blue-500 flex items-center gap-2">
             <Droplets size={28} className="fill-blue-500 text-blue-500" /> 
             FLOODGUARD <span className="text-white">DASHBOARD</span>
           </h1>
-          <p className="text-slate-400 text-xs mt-1">Hệ thống cảnh báo lũ lụt thời gian thực</p>
+          <div className="flex items-center gap-2 mt-1">
+             <p className="text-slate-400 text-xs">Cập nhật lúc: </p>
+             {/* --- SỬA ĐỔI: Hiển thị thời gian có icon --- */}
+             <span className="text-yellow-400 text-xs font-mono flex items-center gap-1">
+                <Calendar size={12}/> {lastUpdate}
+             </span>
+          </div>
         </div>
 
         <div className="flex items-center gap-3 bg-slate-900/50 p-1.5 rounded-lg border border-slate-700">
@@ -155,16 +173,14 @@ function App() {
         </div>
       </header>
 
-      {/* --- NỘI DUNG CHÍNH --- */}
+      {/* BODY */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-        {/* CỘT TRÁI (4/12) */}
+        {/* LEFT COLUMN */}
         <div className="lg:col-span-4 space-y-6">
-          
-          {/* 1. Mực nước & Trạng thái */}
+          {/* Status Box */}
           <div className="bg-[#1e293b] rounded-2xl p-6 border border-slate-700 shadow-xl relative overflow-hidden">
             <div className={`absolute top-0 right-0 p-10 opacity-5 rounded-full blur-2xl transform translate-x-10 -translate-y-10 w-32 h-32 ${status.bg.replace('/20','')}`}></div>
-
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h2 className="text-slate-400 text-xs font-bold uppercase tracking-wider">Thiết bị giám sát</h2>
@@ -189,14 +205,12 @@ function App() {
             </div>
           </div>
 
-          {/* 2. CẤU HÌNH CẢNH BÁO (BẮT BUỘC ĐỂ SET TELEGRAM) */}
+          {/* Config Box */}
           <div className="bg-[#1e293b] rounded-2xl p-6 border border-slate-700 shadow-lg">
              <h3 className="text-white font-semibold flex items-center gap-2 mb-4 text-sm uppercase">
                <Settings size={18} className="text-blue-500"/> Cấu hình & Liên kết
              </h3>
-             
              <div className="space-y-4">
-                {/* ID TELEGRAM */}
                 <div>
                   <label className="text-xs text-slate-400 block mb-1">Telegram Chat ID (Nhóm)</label>
                   <input 
@@ -207,8 +221,6 @@ function App() {
                   />
                   <p className="text-[10px] text-slate-500 mt-1">Mặc định: {DEFAULT_CHAT_ID}</p>
                 </div>
-
-                {/* NGƯỠNG MIN / MAX */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="text-xs text-slate-400 block mb-1">Báo an toàn (&lt;%)</label>
@@ -229,8 +241,6 @@ function App() {
                     />
                   </div>
                 </div>
-
-                {/* NÚT LƯU */}
                 <button 
                   onClick={handleSaveConfig}
                   disabled={isSaving}
@@ -241,7 +251,7 @@ function App() {
              </div>
           </div>
 
-          {/* 3. GPS */}
+          {/* GPS Box */}
           <div className="bg-[#1e293b] rounded-2xl p-6 border border-slate-700 shadow-lg">
              {hasGPS ? (
                <a 
@@ -259,8 +269,9 @@ function App() {
           </div>
         </div>
 
-        {/* CỘT PHẢI (8/12) */}
+        {/* RIGHT COLUMN */}
         <div className="lg:col-span-8 flex flex-col gap-6">
+          {/* Chart */}
           <div className="bg-[#1e293b] p-6 rounded-2xl border border-slate-700 shadow-xl flex-1 min-h-[350px]">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-white font-semibold flex items-center gap-2 text-sm uppercase">
@@ -282,18 +293,18 @@ function App() {
                     </linearGradient>
                   </defs>
                   <CartesianGrid strokeDasharray="3 3" stroke="#334155" vertical={false} />
-                  <XAxis dataKey="time" stroke="#64748b" tick={{fill: '#94a3b8', fontSize: 11}} />
+                  {/* Trục X dùng shortTime để đỡ rối, tooltip dùng time đầy đủ */}
+                  <XAxis dataKey="time" stroke="#64748b" tickFormatter={(str) => str.split(' ')[1] || str} tick={{fill: '#94a3b8', fontSize: 11}} />
                   <YAxis stroke="#64748b" domain={[0, 100]} tick={{fill: '#94a3b8', fontSize: 11}} unit="%" />
                   <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: '#334155', color: '#fff' }} />
                   <Line type="monotone" dataKey="level" stroke="#3b82f6" strokeWidth={3} dot={{r: 4, fill:'#1e293b'}} activeDot={{r: 6}} />
-                  {/* Đường giới hạn đỏ chạy theo config.max */}
                   <Line type="monotone" dataKey={() => config.max} stroke="#ef4444" strokeDasharray="5 5" dot={false} strokeWidth={1} name="Báo động" />
                 </LineChart>
               </ResponsiveContainer>
             </div>
           </div>
           
-          {/* Lịch sử */}
+          {/* History Table */}
           <div className="bg-[#1e293b] p-6 rounded-2xl border border-slate-700 shadow-lg">
              <h3 className="text-white font-semibold flex items-center gap-2 mb-4 text-sm uppercase">
               <History className="text-green-500"/> Lịch sử đo đạc gần nhất
