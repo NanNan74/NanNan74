@@ -17,7 +17,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "lucide-react": "^0.395.0",
-    "recharts": "^2.12.7"
+    "recharts": "^2.12.7",
+    "@google/genai": "^0.1.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",
