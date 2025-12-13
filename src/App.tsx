@@ -5,7 +5,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { MapPin, Activity, Droplets, History, AlertTriangle, CheckCircle, Signal, Settings, Save, Calendar, Info } from 'lucide-react';
 
 // --- CẤU HÌNH MẶC ĐỊNH ---
-const DEFAULT_CHAT_ID = "-5023306137"; 
+const DEFAULT_CHAT_ID = "-1003329861501"; 
 
 const STATIONS = [
   { id: 'river-002', name: 'Khu vực A', address: 'Khu vực Hạ lưu (Trạm chính)' }, 
