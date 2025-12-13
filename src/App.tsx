@@ -8,9 +8,9 @@ import { MapPin, Activity, Droplets, History, AlertTriangle, CheckCircle, Signal
 const DEFAULT_CHAT_ID = "-5023306137"; 
 
 const STATIONS = [
-  { id: 'river-002', name: 'Nhà Ngọc Anh', address: 'Khu vực Hạ lưu (Trạm chính)' }, 
-  { id: 'river-001', name: 'Nhà Ánh Như', address: 'Khu vực Thượng nguồn' },
-  { id: 'river-003', name: 'Nhà Thủy Tiên', address: 'Khu vực Trũng thấp' }
+  { id: 'river-002', name: 'Khu vực A', address: 'Khu vực Hạ lưu (Trạm chính)' }, 
+  { id: 'river-001', name: 'Khu vực B', address: 'Khu vực Thượng nguồn' },
+  { id: 'river-003', name: 'Khu vực C', address: 'Khu vực Trũng thấp' }
 ];
 
 // Hàm hỗ trợ format thời gian đầy đủ
